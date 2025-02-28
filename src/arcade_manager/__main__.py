@@ -20,10 +20,10 @@ def main():
         toolbox_location = args.toolbox
         # Copy this repository to the toolbox location
         toolbox_location = Path(toolbox_location)
-        module_location = Path(__file__).parent
+        module_location = Path(__file__).parent.parent
         toolbox_location.mkdir(parents=True, exist_ok=True)
         shutil.copytree(module_location, toolbox_location / 'arcade_manager')
-        print(f"Initialized toolbox at {toolbox_location / 'arcade_manager' / 'toolbox' / 'ArcadeTools.pyt'}")
+        print(f"Initialized toolbox at {toolbox_location / 'ArcadeTools.pyt'}")
             
 if __name__ == '__main__':
     main()

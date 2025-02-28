@@ -2,31 +2,26 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from arcpy import Parameter
 from arcade_manager import Committer, Extractor
 
-from arcpy import Parameter
-
-@dataclass
 class Tool:
-    label: str = None
-    category: str = None
-    description: str = None
-    canRunInBackground: bool = True
-    
-    def __post_init__(self):
-        if not self.label:
-            self.label = self.__class__.__name__
-            
+    def __init__(self):
+        self.label: str = None
+        self.category: str = None
+        self.description: str = None
+        self.canRunInBackground: bool = True
+
     def getParameterInfo(self): ...
-    def updateParameters(self, parameters: list[Parameter], messages: list): ...
-    def updateMessages(self, parameters: list[Parameter], messages: list): ...
-    def isLicensed(self): ...
+    def updateParameters(self, parameters: list[Parameter]): ...
+    def updateMessages(self, parameters: list[Parameter]): ...
+    def isLicensed(self): return True
     def execute(self, parameters: list[Parameter], messages: list): ...
     def postExecute(self, parameters: list[Parameter], messages: list): ...
 
 class ExtractArcade(Tool):
     def __init__(self):
-        super().__init__(self)
+        super().__init__()
         
         # Override Defaults
         self.label = "Extract Rules"
@@ -55,7 +50,7 @@ class ExtractArcade(Tool):
         
 class CommitArcade(Tool):
     def __init__(self):
-        super().__init__(self)
+        super().__init__()
         
         # Override Defaults
         self.label = "Commit Rules"
@@ -82,8 +77,8 @@ class CommitArcade(Tool):
         
         Committer(database, repo).commit()
     
-@dataclass
-class Toolbox: 
-    label: str = "Arcade Toolbox"
-    alias: str = "ArcadeToolbox"
-    tools: list[Tool] = (ExtractArcade, CommitArcade)
+class Toolbox:
+    def __init__(self):
+        self.label: str = "Arcade Toolbox"
+        self.alias: str = "ArcadeToolbox"
+        self.tools: list[Tool] = [ExtractArcade, CommitArcade]

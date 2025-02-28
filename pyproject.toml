@@ -11,6 +11,12 @@ dependencies = [
     'arcpy'
 ]
 
+[project.build]
+target = "arcade-manager"
+
+[project.data]
+toolbox = "ArcadeTools.pyt"
+
 [project.scripts]
 arcade-editor = "arcade_editor:main"
 
