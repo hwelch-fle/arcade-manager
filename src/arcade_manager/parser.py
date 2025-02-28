@@ -245,9 +245,9 @@ class Extractor:
         >>> Extractor(Path(<Database>), Path(<Repo Target>))
         <Messages>
     """
-    def __init__(self, database: Path, out: Path):
-        self.database = Path(database)
-        self.out = Path(out)
+    def __init__(self, database: Path, repo: Path):
+        self.database = database
+        self.repo = repo
         self.rules = {}
         
         with TemporaryDirectory() as schema_out:
@@ -282,6 +282,7 @@ class Extractor:
     def _patch_scripts(self, parent_dataset: Dataset, path: Path) -> None:
         # If the GenerateSchemaReport function is patched to not scrub datastore
         # names, this pass can be skipped
+        path = Path(path)
         if parent_dataset.rules:
             scripts = {
                 rule['name']: rule['scriptExpression']
@@ -300,10 +301,10 @@ class Extractor:
             self._patch_scripts(child_dataset, path/child_dataset.name)
             
     def extract(self):
-        if not self.out:
+        if not self.repo:
             raise AttributeError(f"Can't extract a when no outpath is specified")
-        self.schema.extract(self.out)
-        print(f"Extracted rules from {self.database.name} to {self.out.name}", severity='INFO')
+        self.schema.extract(self.repo)
+        print(f"Extracted rules from {self.database.name} to {self.repo.name}", severity='INFO')
             
 class Committer:
     """Commit an Extracted codebase back to a database
@@ -312,13 +313,14 @@ class Committer:
         >>> Commiter(Path(<Database>), Path(<Rule Repo>)).commit()
         <Messages>
     """
-    def __init__(self, database: Path, source: Path) -> None:
+    def __init__(self, database: Path, repo: Path) -> None:
         self.database = database
         self.rules = {}
+        
         # Load current schema so only changed rules are applied
         self._current_state = Extractor(self.database, out=None)
         
-        self.schema = self._load(Path(source))
+        self.schema = self._load(Path(repo))
               
     def _get_rule(self, config_file: Path) -> Rule:
         # Get containing folder
