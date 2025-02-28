@@ -41,6 +41,8 @@ def print(*values: object,
     end = "" if end == '\n' else end
     message = f"{sep.join(map(str, values))}{end}"
     # Print the message to the ArcGIS Pro message queue with the appropriate severity
+    if not severity:
+        severity = 'INFO'
     match severity:
         case "WARNING":
             AddWarning(f"{message}")
