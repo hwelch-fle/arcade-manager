@@ -1,1 +1,1 @@
-from .parser import Extractor, Committer
+from .parser import Extractor, Committer, print
