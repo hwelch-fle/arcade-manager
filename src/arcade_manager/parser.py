@@ -137,6 +137,7 @@ class Rule:
         parent_name = parent_path.name
         if not Exists(str(parent_path)):
             print(f"{parent_name} does not exist in target database, skipping", severity='WARNING')
+            return
         existing_rules = Describe(str(parent_path))['attributeRules']
         exitsing_rules: set[str] = {rule['name'] for rule in existing_rules}
         
