@@ -46,6 +46,8 @@ class ExtractArcade(Tool):
         database = Path(database.valueAsText)
         repo = Path(repo.valueAsText)
         
+        AddMessage(f"Extracting rules from {database} to {repo}")
+        
         Extractor(database, repo).extract()
         
 class CommitArcade(Tool):
