@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal, Optional
 from tempfile import TemporaryDirectory
 import json
@@ -79,6 +79,7 @@ class Rule:
     requiredGeodatabaseClientVersion: str
     creationTime: int
     triggeringFields: list[str]
+    _parent: Path = field(compare=False)
     
     @property
     def safe_name(self) -> str:
@@ -120,21 +121,25 @@ class Rule:
         else:
             return flag
     
-    def extract(self, path: Path) -> None:
-        path = Path(path) / self.safe_name
+    def extract(self, parent_path: Path) -> None:
+        parent_path = Path(parent_path) / self.safe_name
         _copy = self.__dict__.copy()
         
         script = _copy.pop('scriptExpression')
-        script_file = path / f"{path.name}.js"
+        
+        # Remove the parent path so it doesn't get written to the config file
+        _copy.pop('_parent')
+        script_file = parent_path / f"{parent_path.name}.js"
         
         config = json.dumps(_copy, indent=2)
-        config_file = path / f"config.json"
+        config_file = parent_path / f"config.json"
         
-        path.mkdir(exist_ok=True, parents=True)
+        parent_path.mkdir(exist_ok=True, parents=True)
         script_file.open(mode='w').write(script)
         config_file.open(mode='w').write(config)
-      
-    def commit(self, parent_path: Path, to_delete: set=None) -> None:
+    
+    def _delete(self, parent_path: Path) -> None:
+        # Move delete to its own function so rules can delete themselves
         parent_path = Path(parent_path)
         parent_name = parent_path.name
         if not Exists(str(parent_path)):
@@ -196,6 +201,11 @@ class Dataset:
     name: str
     datasets: Optional[list[Dataset]]
     rules: Optional[list[Rule]]
+    _relpath: Optional[str] = None
+    
+    @property
+    def path(self) -> str:
+        return self._relpath or self.name
     
     @property
     def safe_name(self) -> str:
@@ -275,10 +285,11 @@ class Extractor:
                 for dataset in schema['datasets']
                 ] if 'datasets' in schema else None,
             rules=[
-                Rule(**rule) 
+                Rule(**rule, **{'_parent': Path(schema['catalogPath'])})
                 for rule in 
                 schema['attributeRules']
-                ] if 'attributeRules' in schema else None
+                ] if 'attributeRules' in schema else None,
+            _relpath=Path(schema['catalogPath']),
         )
         
     def _patch_scripts(self, parent_dataset: Dataset, path: Path) -> None:
@@ -326,7 +337,9 @@ class Committer:
               
     def _get_rule(self, config_file: Path) -> Rule:
         # Get containing folder
-        parent = config_file.parent
+        rule_dir = config_file.parent
+        # Get the parent dataset
+        parent = rule_dir.parent
         # Find script file
         script_file = next(parent.glob('*.js'))
         # Load Config
@@ -336,7 +349,7 @@ class Committer:
         # Inject script
         config['scriptExpression'] = script
         # Construct Rule object
-        rule = Rule(**config)
+        rule = Rule(**config, **{'_parent': parent.relative_to(self.repo)})
         # Register the rule
         self.rules[rule.id] = rule
         return rule
@@ -362,7 +375,8 @@ class Committer:
                 
                 for file in dataset.iterdir() 
                 if file.name == 'config.json' # One of which is config.json
-            ]
+            ],
+            _relpath=path.relative_to(self.repo) if path != self.repo else self.repo,
         )
     
     def _to_delete(self) -> set[int]:
