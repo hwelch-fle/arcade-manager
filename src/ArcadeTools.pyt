@@ -74,16 +74,28 @@ class Sync(Tool):
         return [database, repo, direction]
     
     def execute(self, parameters: list[Parameter], messages) -> None:
-        database, repo, direction = parameters
+        database_param, repo_param, direction_param = parameters
         
-        database = self.databases.get(database.valueAsText)
-        repo = self.repos.get(repo.valueAsText)
-        direction = direction.valueAsText
+        database = self.databases.get(database_param.valueAsText)
+        repo = self.repos.get(repo_param.valueAsText)
+        direction = direction_param.valueAsText
         
         if direction == 'Database -> Repo':
+            # Create a new repo if it doesn't exist
+            if not repo:
+                print(f"Creating new repo at {self.repo_path / repo_param.valueAsText}")
+                repo = self.repo_path / repo_param.valueAsText
+                repo.mkdir()
+                
             print(f"Syncing rules from {database.name} to {repo.name}")
             Extractor(database, repo).extract()
+            
         elif direction == 'Repo -> Database':
+            # Ensure the repo exists
+            if not repo:
+                print(f"Invalid Repo: {repo_param.valueAsText}", severity='ERROR')
+                return
+            
             print(f"Syncing rules from {repo.name} to {database.name}")
             Committer(database, repo).commit()
         else:
