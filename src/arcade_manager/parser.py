@@ -142,59 +142,95 @@ class Rule:
         # Move delete to its own function so rules can delete themselves
         parent_path = Path(parent_path)
         parent_name = parent_path.name
-        if not Exists(str(parent_path)):
-            print(f"{parent_name} does not exist in target database, skipping", severity='WARNING')
-            return
-        existing_rules = Describe(str(parent_path))['attributeRules']
-        exitsing_rules: set[str] = {rule['name'] for rule in existing_rules}
-        
         try:
-            if to_delete and self.id in to_delete:
-                # Delete the rule
-                DeleteAttributeRule(
-                    in_table=str(parent_path), 
-                    names=[self.name],
-                )
-
-            elif self.name not in exitsing_rules:
-                # Create a new rule
-                AddAttributeRule(
-                    in_table=str(parent_path),
-                    name=self.name,
-                    type=self.translated_type,
-                    script_expression=self.scriptExpression,
-                    is_editable=self.userEditable*'EDITABLE' or 'NONEDITABLE',
-                    triggering_events=self.translated_events,
-                    error_number=self._convert_flag(self.errorNumber),
-                    error_message=self.errorMessage,
-                    description=self.description,
-                    subtype=self._convert_flag(self.subtypeCode),
-                    field=self.fieldName,
-                    exclude_from_client_evaluation=self.excludeFromClientEvaluation*'EXCLUDE' or 'INCLUDE',
-                    batch=self.batch*'BATCH' or 'NOT_BATCH',
-                    severity=self._convert_flag(self.severity),
-                    tags=self.tags,
-                    triggering_fields=self.triggeringFields,
-                )
-            else:
-                # Alter existing rule
-                AlterAttributeRule(
-                    in_table=str(parent_path),
-                    name=self.name,
-                    description=self.description,
-                    error_number=self._convert_flag(self.errorNumber),
-                    error_message=self.errorMessage,
-                    tags=self.tags or 'RESET',
-                    triggering_events=self.translated_events,
-                    script_expression=self.scriptExpression,
-                    exclude_from_client_evaluation=self.excludeFromClientEvaluation*'EXCLUDE' or 'INCLUDE',
-                    triggering_fields=self.triggeringFields,
-                )
+            DeleteAttributeRule(
+                in_table=str(parent_path), 
+                names=[self.name],
+            )
+            print(f"Deleted rule {self.name} from {parent_name}", severity='INFO')
         except Exception as e:
             print(
-                f"Failed to commit rule {self.name} to {parent_name}\n"
+                f"Failed to delete rule {self.name} from {parent_name}\n"
                 f"{e}", severity='ERROR'
             )
+    
+    def _insert(self, parent_path: Path) -> None:
+        parent_path = Path(parent_path)
+        parent_name = parent_path.name
+        try:
+            AddAttributeRule(
+                in_table=str(parent_path),
+                name=self.name,
+                type=self.translated_type,
+                script_expression=self.scriptExpression,
+                is_editable=self.userEditable*'EDITABLE' or 'NONEDITABLE',
+                triggering_events=self.translated_events,
+                error_number=self._convert_flag(self.errorNumber),
+                error_message=self.errorMessage,
+                description=self.description,
+                subtype=self._convert_flag(self.subtypeCode),
+                field=self.fieldName,
+                exclude_from_client_evaluation=self.excludeFromClientEvaluation*'EXCLUDE' or 'INCLUDE',
+                batch=self.batch*'BATCH' or 'NOT_BATCH',
+                severity=self._convert_flag(self.severity),
+                tags=self.tags,
+                triggering_fields=self.triggeringFields,
+            )
+            print(f"Added rule {self.name} to {parent_name}", severity='INFO')
+        except Exception as e:
+            print(
+                f"Failed to add rule {self.name} to {parent_name}\n"
+                f"{e}", severity='ERROR'
+            )
+    
+    def _update(self, parent_path: Path) -> None:
+        parent_path = Path(parent_path)
+        parent_name = parent_path.name
+        try:
+            AlterAttributeRule(
+                in_table=str(parent_path),
+                name=self.name,
+                description=self.description,
+                error_number=self._convert_flag(self.errorNumber),
+                error_message=self.errorMessage,
+                tags=self.tags or 'RESET',
+                triggering_events=self.translated_events,
+                script_expression=self.scriptExpression,
+                exclude_from_client_evaluation=self.excludeFromClientEvaluation*'EXCLUDE' or 'INCLUDE',
+                triggering_fields=self.triggeringFields,
+            )
+            print(f"Updated rule {self.name} in {parent_name}", severity='INFO')
+        except Exception as e:
+            print(
+                f"Failed to update rule {self.name} in {parent_name}\n"
+                f"{e}", severity='ERROR'
+            )
+    
+    def commit(self, parent_path: Path, existing: dict[int, Rule], delete=False) -> bool:
+        parent_path = Path(parent_path)
+        parent_name = parent_path.name
+        if not Exists(str(parent_path)):
+            print(f"{parent_name} does not exist in target database, skipping", severity='WARNING')
+            return False
+        
+        # Skip if the rule is already in the database and up to date
+        if self.id in existing and self == existing[self.id]:
+            return False
+        
+        if delete:
+            # Delete rule
+            self._delete(parent_path)
+            return True
+        
+        if self.id not in existing:
+            # Insert new rule
+            self._insert(parent_path)
+            return True
+                
+        else:
+            # Alter existing rule
+            self._update(parent_path)
+            return True
 
 @dataclass
 class Dataset:
