@@ -320,7 +320,7 @@ class Committer:
         self.rules = {}
         
         # Load current schema so only changed rules are applied
-        self._current_state = Extractor(self.database, out=None)
+        self._current_state = Extractor(self.database, repo=None)
         
         self.schema = self._load(Path(repo))
               
