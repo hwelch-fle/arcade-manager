@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from arcpy import Parameter
-from arcade_manager import Committer, Extractor
+from arcade_manager import Committer, Extractor, print
 
 class Tool:
     def __init__(self):
@@ -46,7 +46,7 @@ class ExtractArcade(Tool):
         database = Path(database.valueAsText)
         repo = Path(repo.valueAsText)
         
-        AddMessage(f"Extracting rules from {database} to {repo}")
+        print(f"Extracting rules from {database} to {repo}")
         
         Extractor(database, repo).extract()
         
@@ -76,6 +76,8 @@ class CommitArcade(Tool):
         
         repo = Path(repo.valueAsText)
         database = Path(database.valueAsText)
+        
+        print(f"Committing rules from {repo} to {database}")
         
         Committer(database, repo).commit()
     
