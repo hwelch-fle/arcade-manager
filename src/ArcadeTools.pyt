@@ -16,6 +16,7 @@ class Tool:
         self.project = ArcGISProject('CURRENT')
         if not self.repo_path.exists():
             self.repo_path = Path(self.project.homeFolder) / 'arcade_rules'
+            self.repo_path.mkdir(exist_ok=True)
         
         self.repos = {
             repo.name: repo
