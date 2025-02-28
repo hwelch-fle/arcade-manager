@@ -248,7 +248,7 @@ class Extractor:
         <Messages>
     """
     def __init__(self, database: Path, repo: Path):
-        self.database = database
+        self.database = Path(database)
         self.repo = repo
         self.rules = {}
         
@@ -316,7 +316,7 @@ class Committer:
         <Messages>
     """
     def __init__(self, database: Path, repo: Path) -> None:
-        self.database = database
+        self.database = Path(database)
         self.rules = {}
         
         # Load current schema so only changed rules are applied
