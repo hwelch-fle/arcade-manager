@@ -258,6 +258,7 @@ class Dataset:
     
     def extract(self, path: Path) -> None:
         path = Path(path)
+        print(f"Extracting Rules in {self.name} to {path.name}", severity='INFO')
         for ds in self.datasets or []:
             # Continue the recursion
             ds.extract(path / ds.safe_name)
@@ -265,16 +266,18 @@ class Dataset:
             # Only write out Datasets that have rules
             rule.extract(path)
     
-    def commit(self, path: Path, to_delete: set=None) -> None:
+    def commit(self, path: Path, existing: dict[int, Rule]) -> None:
         # Anchor point (<database>\<recursively\rebuilt\paths>)
         path = Path(path)
         # Recurse
         for ds in self.datasets or []:
-            ds.commit(path / ds.name, to_delete=to_delete)
+            ds.commit(path / ds.name, existing=existing)
                         
         # Commit all rules found in tree
-        for rule in self.rules or []:
-            rule.commit(path, to_delete=to_delete)
+        updates = sum(rule.commit(path, existing=existing) for rule in self.rules or [])
+        if updates:
+            print(f"Committed {updates} changes in {self.name}", severity='INFO')
+            print("-"*50, severity='INFO')
     
     def __getitem__(self, key: str):
         for dataset in self.datasets or []:
@@ -295,8 +298,8 @@ class Extractor:
     """
     def __init__(self, database: Path, repo: Path):
         self.database = Path(database)
-        self.repo = repo
-        self.rules = {}
+        self.repo: Path = Path(repo) if repo else None
+        self.rules: dict[int, Rule] = {}
         
         with TemporaryDirectory() as schema_out:
             out_path = Path(schema_out) / 'schema.json'
@@ -364,10 +367,12 @@ class Committer:
     """
     def __init__(self, database: Path, repo: Path) -> None:
         self.database = Path(database)
-        self.rules = {}
+        self.rules: dict[int, Rule] = {}
+        self.repo = Path(repo)
         
         # Load current schema so only changed rules are applied
         self._current_state = Extractor(self.database, repo=None)
+        self.existing = self._current_state.rules
         
         self.schema = self._load(Path(repo))
               
@@ -377,7 +382,7 @@ class Committer:
         # Get the parent dataset
         parent = rule_dir.parent
         # Find script file
-        script_file = next(parent.glob('*.js'))
+        script_file = next(rule_dir.glob('*.js'))
         # Load Config
         config = json.loads(config_file.open().read())
         # Load Script
@@ -414,15 +419,14 @@ class Committer:
             ],
             _relpath=path.relative_to(self.repo) if path != self.repo else self.repo,
         )
-    
-    def _to_delete(self) -> set[int]:
-        # Remove all rules in database that are not in loaded schema
-        return self._current_state.rules.keys() - self.rules.keys()
-           
+        
     def commit(self):
         # Anchor the schema to the target database
-        # _to_delete is passed through the chain so rules
-        # can delete themselved if requested
-        self.schema.commit(self.database, self._to_delete())
+        # existing rules are passed so only changed rules are applied
+        # this saves a lot of time
+        self.schema.commit(self.database, existing=self.existing or {})
+        for rule in self.existing.values():
+            if rule.id not in self.rules:
+                rule.commit(self.database/rule._parent, existing=self.existing, delete=True)  
         print(f"Commit to {self.database.name} complete", severity='INFO')
             
