@@ -21,6 +21,8 @@ There are 2 tools available in the toolbox:
 
 These tools are the same as the command line tools, but are available within ArcGIS Pro. With your toolbox copy, you can also add additional tools and hardcode the paths to your database and repo in the toolbox.
 
+**WARNING** It seems that with more complex datasets, running `Commit` through the tool will cause ArcPro to crash. It's probably best to run the CLI tool or just use a python terminal if you need to manage a database with more than ~50 rules
+
 ```python
 ... snip ...
 class ExtractArcade(Tool):
