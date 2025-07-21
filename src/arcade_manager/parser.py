@@ -79,6 +79,7 @@ class Rule:
     requiredGeodatabaseClientVersion: str
     creationTime: int
     triggeringFields: list[str]
+    subtypeCodes: list[str]
     _parent: Path = field(compare=False)
     
     @property
@@ -210,7 +211,7 @@ class Rule:
         parent_path = Path(parent_path)
         parent_name = parent_path.name
         if not Exists(str(parent_path)):
-            print(f"{parent_name} does not exist in target database, skipping", severity='WARNING')
+            print(f"{parent_name} does not exist in target database, skipping {self.name}", severity='WARNING')
             return False
         
         # Skip if the rule is already in the database and up to date
@@ -272,7 +273,7 @@ class Dataset:
         # Recurse
         for ds in self.datasets or []:
             ds.commit(path / ds.name, existing=existing)
-                        
+        
         # Commit all rules found in tree
         updates = sum(rule.commit(path, existing=existing) for rule in self.rules or [])
         if updates:
@@ -369,7 +370,7 @@ class Committer:
         self.database = Path(database)
         self.rules: dict[int, Rule] = {}
         self.repo = Path(repo)
-        
+
         # Load current schema so only changed rules are applied
         self._current_state = Extractor(self.database, repo=None)
         self.existing = self._current_state.rules
@@ -427,6 +428,6 @@ class Committer:
         self.schema.commit(self.database, existing=self.existing or {})
         for rule in self.existing.values():
             if rule.id not in self.rules:
-                rule.commit(self.database/rule._parent, existing=self.existing, delete=True)  
+                rule.commit(self.database / rule._parent, existing=self.existing, delete=True)  
         print(f"Commit to {self.database.name} complete", severity='INFO')
             
