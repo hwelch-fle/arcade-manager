@@ -84,7 +84,6 @@ class Rule:
     creationTime: int
     triggeringFields: list[str]
     subtypeCodes: list[str]
-    subtypeCodes: list[str]
     _parent: Path = field(compare=False)
 
     @property
