@@ -135,9 +135,9 @@ class Rule:
         config_file = parent_path / f"config.json"
         
         parent_path.mkdir(exist_ok=True, parents=True)
-        script_file.open(mode='w').write(script)
-        config_file.open(mode='w').write(config)
-    
+        script_file.open(mode="wt", encoding="utf-8").write(script)
+        config_file.open(mode="wt", encoding="utf-8").write(config)
+
     def _delete(self, parent_path: Path) -> None:
         # Move delete to its own function so rules can delete themselves
         parent_path = Path(parent_path)
@@ -307,7 +307,10 @@ class Extractor:
                 in_dataset=str(self.database),
                 name=out_path.name,
                 out_location=schema_out,
-                formats=['JSON'],
+                formats=["JSON"],
+            )
+            self.schema: Dataset = self._read(
+                json.loads(out_path.open("rt", encoding="utf-8").read())
             )
             self.schema: Dataset = self._read(json.loads(out_path.open().read()))
             
