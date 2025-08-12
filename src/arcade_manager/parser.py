@@ -1,10 +1,10 @@
 from __future__ import annotations
+
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Literal, Optional, Any
 from tempfile import TemporaryDirectory
 import json
-import builtins
 
 from arcpy import (
     Exists,
