@@ -86,6 +86,13 @@ class Rule:
     subtypeCodes: list[str]
     _parent: Path = field(compare=False)
 
+    def __eq__(self: Rule, other: Rule) -> bool:
+        exclude = {"_parent", "creationTime"}
+        for key in self.__dict__.keys() - exclude:
+            if self.__dict__[key] != other.__dict__[key]:
+                return False
+        return True
+
     @property
     def safe_name(self) -> str:
         """Sanitize the rulename so it can be used in a filepath"""
