@@ -8,11 +8,10 @@ from arcade_manager import Committer, Extractor, print
 
 class Sync:
     def __init__(self):
-        self.repo_path: Path = Path(r"<Path To Repo>")
+
         self.project = ArcGISProject("CURRENT")
-        if not self.repo_path.exists():
-            self.repo_path = Path(self.project.homeFolder) / "arcade_rules"
-            self.repo_path.mkdir(exist_ok=True)
+        self.repo_path = Path(self.project.homeFolder) / "arcade_rules"
+        self.repo_path.mkdir(exist_ok=True)
 
         self.repos = {
             repo.name: repo
@@ -21,7 +20,7 @@ class Sync:
         }
 
         self.repos["origin"] = Path(
-            "S:\\Projects\\Ezee Fiber\\_ArcGIS Setup\\Template\\{Market} {FDA} - v1.17\\arcade_rules\\ezee-arcade"
+            r"S:\Projects\Ezee Fiber\_ArcGIS Setup\Template\\{Market} {FDA} - v1.17\arcade_rules\ezee-arcade"
         )
 
         self.databases = {
@@ -98,4 +97,4 @@ class Toolbox:
     def __init__(self):
         self.label: str = "Arcade Toolbox"
         self.alias: str = "ArcadeToolbox"
-        self.tools: list[Tool] = [Sync]
+        self.tools: list = [Sync]
