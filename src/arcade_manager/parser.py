@@ -86,12 +86,11 @@ class Rule:
     batch: bool
     requiredGeodatabaseClientVersion: str
     creationTime: int = field(compare=False)
-
-    # New fields added in ArcPro 3.5, default to an empty list
-    # for compat
-    triggeringFields: list[str] | None = None
-    subtypeCodes: list[str] | None = None
     _parent: Path = field(compare=False)
+
+    # New fields added in ArcPro 3.5, default to None for compat
+    triggeringFields: list[str] | None = field(default=None)
+    subtypeCodes: list[str] | None = field(default=None)
 
     @property
     def safe_name(self) -> str:
@@ -194,10 +193,11 @@ class Rule:
             args["severity"] = self._convert_flag(self.severity)
             args["tags"] = self.tags
 
-            if self.triggeringFields:
-                args["triggering_fields"] = self.triggeringFields
-            if self.subtypeCodes:
-                args["subtype_codes"] = self.subtypeCodes
+            # if self.triggeringFields is not None:
+            #     args["triggering_fields"] = self.triggeringFields
+            #
+            # if self.subtypeCodes is not None:
+            #     args["subtype_codes"] = self.subtypeCodes
 
             AddAttributeRule(**args)
             print(f"Added rule {self.name} to {parent_name}", severity="INFO")
@@ -211,20 +211,23 @@ class Rule:
         parent_path = Path(parent_path)
         parent_name = parent_path.name
         try:
-            AlterAttributeRule(
-                in_table=str(parent_path),
-                name=self.name,
-                description=enc_dec(self.description),
-                error_number=self._convert_flag(self.errorNumber),
-                error_message=self.errorMessage,
-                tags=self.tags or "RESET",
-                triggering_events=self.translated_events,
-                script_expression=enc_dec(self.scriptExpression),
-                exclude_from_client_evaluation=(
-                    "EXCLUDE" if self.excludeFromClientEvaluation else "INCLUDE"
-                ),
-                triggering_fields=self.triggeringFields,
+            args = {}
+            args["in_table"] = str(parent_path)
+            args["name"] = self.name
+            args["script_expression"] = enc_dec(self.scriptExpression)
+            args["triggering_events"] = self.translated_events
+            args["error_number"] = self._convert_flag(self.errorNumber)
+            args["error_message"] = self.errorMessage
+            args["description"] = enc_dec(self.description)
+            args["exclude_from_client_evaluation"] = (
+                "EXCLUDE" if self.excludeFromClientEvaluation else "INCLUDE"
             )
+            args["tags"] = self.tags
+
+            # if self.triggeringFields is not None:
+            #    args["triggering_fields"] = self.triggeringFields
+
+            AlterAttributeRule(**args)
 
             print(f"Updated rule {self.name} in {parent_name}", severity="INFO")
         except Exception as e:
