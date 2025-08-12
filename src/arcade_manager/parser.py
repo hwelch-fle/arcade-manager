@@ -249,7 +249,7 @@ class Rule:
             return False
 
         # Skip if the rule is already in the database and up to date
-        if self.id in existing and self == existing[self.id]:
+        if self == existing.get(self.id):
             return False
 
         if delete:
