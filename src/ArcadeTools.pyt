@@ -41,7 +41,7 @@ class Sync:
         )
         database.filter.list = list(self.databases.keys())
         if "LLD_Design.gdb" in self.databases.keys():
-            database = "LLD_Design.gdb"
+            database.value = "LLD_Design.gdb"
 
         repo = Parameter(
             name="repo",
