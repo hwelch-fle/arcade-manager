@@ -75,22 +75,22 @@ class Rule:
     errorMessage: str
     userEditable: bool
     isEnabled: bool
-    referencesExternalService: bool
+    referencesExternalService: bool = field(compare=False)
     excludeFromClientEvaluation: bool
     scriptExpression: str
     triggeringEvents: list[TriggerEvent] | str
     checkParameters: dict
     category: int
     severity: int
-    tags: str
+    tags: str = field(compare=False)
     batch: bool
-    requiredGeodatabaseClientVersion: str
+    requiredGeodatabaseClientVersion: str = field(compare=False)
     creationTime: int = field(compare=False)
     _parent: Path = field(compare=False)
 
     # New fields added in ArcPro 3.5, default to None for compat
-    triggeringFields: list[str] | None = field(default=None)
-    subtypeCodes: list[str] | None = field(default=None)
+    triggeringFields: list[str] | None = field(default=None, compare=False)
+    subtypeCodes: list[str] | None = field(default=None, compare=False)
 
     @property
     def safe_name(self) -> str:
