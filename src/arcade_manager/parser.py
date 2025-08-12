@@ -142,13 +142,13 @@ class Rule:
         parent_path = Path(parent_path) / self.safe_name
         _copy = self.__dict__.copy()
 
-        script = _copy.pop("scriptExpression")
+        script: str = _copy.pop("scriptExpression")
 
         # Remove the parent path so it doesn't get written to the config file
         _copy.pop("_parent")
         script_file = parent_path / f"{parent_path.name}.js"
 
-        config = json.dumps(_copy, indent=2)
+        config: str = json.dumps(_copy, indent=2)
         config_file = parent_path / f"config.json"
 
         parent_path.mkdir(exist_ok=True, parents=True)
@@ -179,12 +179,12 @@ class Rule:
                 in_table=str(parent_path),
                 name=self.name,
                 type=self.translated_type,
-                script_expression=self.scriptExpression,
+                script_expression=self.scriptExpression.encode("utf-8").decode("utf-8"),
                 is_editable="EDITABLE" if self.userEditable else "NONEDITABLE",
                 triggering_events=self.translated_events,
                 error_number=self._convert_flag(self.errorNumber),
                 error_message=self.errorMessage,
-                description=self.description,
+                description=self.description.encode("utf-8").decode("utf-8"),
                 subtype=self._convert_flag(self.subtypeCode),
                 field=self.fieldName,
                 exclude_from_client_evaluation=(
@@ -209,17 +209,18 @@ class Rule:
             AlterAttributeRule(
                 in_table=str(parent_path),
                 name=self.name,
-                description=self.description,
+                description=self.description.encode("utf-8").decode("utf-8"),
                 error_number=self._convert_flag(self.errorNumber),
                 error_message=self.errorMessage,
                 tags=self.tags or "RESET",
                 triggering_events=self.translated_events,
-                script_expression=self.scriptExpression,
+                script_expression=self.scriptExpression.encode("utf-8").decode("utf-8"),
                 exclude_from_client_evaluation=(
                     "EXCLUDE" if self.excludeFromClientEvaluation else "INCLUDE"
                 ),
                 triggering_fields=self.triggeringFields,
             )
+
             print(f"Updated rule {self.name} in {parent_name}", severity="INFO")
         except Exception as e:
             print(
@@ -327,9 +328,9 @@ class Extractor:
         <Messages>
     """
 
-    def __init__(self, database: Path, repo: Path):
+    def __init__(self, database: Path, repo: Optional[Path]):
         self.database = Path(database)
-        self.repo: Path = Path(repo)
+        self.repo: Optional[Path] = None if repo is None else Path(repo)
         self.rules: dict[int, Rule] = {}
 
         with TemporaryDirectory() as schema_out:
@@ -340,9 +341,7 @@ class Extractor:
                 out_location=schema_out,
                 formats=["JSON"],
             )
-            self.schema: Dataset = self._read(
-                json.loads(out_path.open("rt", encoding="utf-8").read())
-            )
+            self.schema: Dataset = self._read(json.loads(out_path.open().read()))
 
             # Because GenerateSchemaReport will strip $datastore names and replace
             # them with GUIDs, we need to do a second pass to re-extract the script
@@ -426,9 +425,9 @@ class Committer:
         # Find script file
         script_file = next(rule_dir.glob("*.js"))
         # Load Config
-        config = json.loads(config_file.open().read())
+        config = json.loads(config_file.read_bytes().decode("utf-8"))
         # Load Script
-        script = script_file.open().read()
+        script = script_file.read_bytes().decode("utf-8")
         # Inject script
         config["scriptExpression"] = script
         # Construct Rule object
