@@ -4,6 +4,7 @@ from pathlib import Path
 from arcpy import Parameter
 from arcpy.mp import ArcGISProject
 from arcade_manager import Committer, Extractor, print
+import os
 
 
 class Sync:
@@ -17,6 +18,7 @@ class Sync:
         self.project = ArcGISProject("CURRENT")
         self.repo_path = Path(self.project.homeFolder) / "arcade_rules"
         self.repo_path.mkdir(exist_ok=True)
+        self.username = os.environ.get("USERNAME")
 
         self.repos = {
             repo.name: repo
@@ -68,7 +70,19 @@ class Sync:
         return [database, repo, direction]
 
     def execute(self, parameters: list[Parameter], messages) -> None:
+
         database_param, repo_param, direction_param = parameters
+
+        if (
+            repo_param.valueAsText == "origin"
+            and self.username != "hwelch"
+            and direction_param.valueAsText == "Database -> Repo"
+        ):
+            print(
+                "You don't have permissions to write to the `origin` repo, "
+                "switch to a local repository and submit a pull request please",
+                severity="ERROR",
+            )
 
         database = self.databases.get(database_param.valueAsText)
         repo = self.repos.get(repo_param.valueAsText)
