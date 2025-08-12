@@ -9,6 +9,11 @@ from arcade_manager import Committer, Extractor, print
 class Sync:
     def __init__(self):
 
+        self.label = "Sync"
+        self.description = (
+            "Syncs arcade scripts between a database and a structured directory"
+        )
+
         self.project = ArcGISProject("CURRENT")
         self.repo_path = Path(self.project.homeFolder) / "arcade_rules"
         self.repo_path.mkdir(exist_ok=True)
@@ -26,11 +31,6 @@ class Sync:
         self.databases = {
             db.name: db for db in Path(self.project.homeFolder).glob("*.gdb")
         }
-        # Override Defaults
-        self.label = "Sync Rules"
-        self.description = (
-            "Syncs arcade scripts between a database and a structured directory"
-        )
 
     def getParameterInfo(self):
         database = Parameter(
@@ -39,7 +39,8 @@ class Sync:
             datatype="GPString",
             parameterType="Required",
         )
-        database.filter.list = list(self.databases.keys())
+        if database.filter:
+            database.filter.list = list(self.databases.keys())
         if "LLD_Design.gdb" in self.databases.keys():
             database.value = "LLD_Design.gdb"
 
@@ -49,7 +50,8 @@ class Sync:
             datatype="GPString",
             parameterType="Required",
         )
-        repo.filter.list = list(self.repos.keys())
+        if repo.filter:
+            repo.filter.list = list(self.repos.keys())
         repo.value = "origin"
 
         direction = Parameter(
@@ -59,7 +61,8 @@ class Sync:
             parameterType="Optional",
             direction="Input",
         )
-        direction.filter.list = ["Database -> Repo", "Repo -> Database"]
+        if direction.filter:
+            direction.filter.list = ["Database -> Repo", "Repo -> Database"]
         direction.value = "Repo -> Database"
 
         return [database, repo, direction]
