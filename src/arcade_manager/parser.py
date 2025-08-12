@@ -24,6 +24,10 @@ CalculationType = Literal["esriARTCalculation", "esriARTValidation"]
 TriggerEvent = Literal["esriARTEUpdate", "esriARTEInsert", "esriARTEDelete"]
 
 
+def enc_dec(string: str) -> str:
+    return string.encode("utf-8").decode("utf-8")
+
+
 # Override print so messages can be sent to Pro as well
 def print(
     *values: object,
@@ -81,17 +85,13 @@ class Rule:
     tags: str
     batch: bool
     requiredGeodatabaseClientVersion: str
-    creationTime: int
-    triggeringFields: list[str]
-    subtypeCodes: list[str]
-    _parent: Path = field(compare=False)
+    creationTime: int = field(compare=False)
 
-    def __eq__(self: Rule, other: Rule) -> bool:
-        exclude = {"_parent", "creationTime"}
-        for key in self.__dict__.keys() - exclude:
-            if self.__dict__[key] != other.__dict__[key]:
-                return False
-        return True
+    # New fields added in ArcPro 3.5, default to an empty list
+    # for compat
+    triggeringFields: list[str] | None = None
+    subtypeCodes: list[str] | None = None
+    _parent: Path = field(compare=False)
 
     @property
     def safe_name(self) -> str:
@@ -175,26 +175,31 @@ class Rule:
         parent_path = Path(parent_path)
         parent_name = parent_path.name
         try:
-            AddAttributeRule(
-                in_table=str(parent_path),
-                name=self.name,
-                type=self.translated_type,
-                script_expression=self.scriptExpression.encode("utf-8").decode("utf-8"),
-                is_editable="EDITABLE" if self.userEditable else "NONEDITABLE",
-                triggering_events=self.translated_events,
-                error_number=self._convert_flag(self.errorNumber),
-                error_message=self.errorMessage,
-                description=self.description.encode("utf-8").decode("utf-8"),
-                subtype=self._convert_flag(self.subtypeCode),
-                field=self.fieldName,
-                exclude_from_client_evaluation=(
-                    "EXCLUDE" if self.excludeFromClientEvaluation else "INCLUDE"
-                ),
-                batch="BATCH" if self.batch else "NOT_BATCH",
-                severity=self._convert_flag(self.severity),
-                tags=self.tags,
-                triggering_fields=self.triggeringFields,
+            args = {}
+            args["in_table"] = str(parent_path)
+            args["name"] = self.name
+            args["type"] = self.translated_type
+            args["script_expression"] = enc_dec(self.scriptExpression)
+            args["is_editable"] = "EDITABLE" if self.userEditable else "NONEDITABLE"
+            args["triggering_events"] = self.translated_events
+            args["error_number"] = self._convert_flag(self.errorNumber)
+            args["error_message"] = self.errorMessage
+            args["description"] = enc_dec(self.description)
+            args["subtype"] = self._convert_flag(self.subtypeCode)
+            args["field"] = self.fieldName
+            args["exclude_from_client_evaluation"] = (
+                "EXCLUDE" if self.excludeFromClientEvaluation else "INCLUDE"
             )
+            args["batch"] = "BATCH" if self.batch else "NOT_BATCH"
+            args["severity"] = self._convert_flag(self.severity)
+            args["tags"] = self.tags
+
+            if self.triggeringFields:
+                args["triggering_fields"] = self.triggeringFields
+            if self.subtypeCodes:
+                args["subtype_codes"] = self.subtypeCodes
+
+            AddAttributeRule(**args)
             print(f"Added rule {self.name} to {parent_name}", severity="INFO")
         except Exception as e:
             print(
@@ -209,12 +214,12 @@ class Rule:
             AlterAttributeRule(
                 in_table=str(parent_path),
                 name=self.name,
-                description=self.description.encode("utf-8").decode("utf-8"),
+                description=enc_dec(self.description),
                 error_number=self._convert_flag(self.errorNumber),
                 error_message=self.errorMessage,
                 tags=self.tags or "RESET",
                 triggering_events=self.translated_events,
-                script_expression=self.scriptExpression.encode("utf-8").decode("utf-8"),
+                script_expression=enc_dec(self.scriptExpression),
                 exclude_from_client_evaluation=(
                     "EXCLUDE" if self.excludeFromClientEvaluation else "INCLUDE"
                 ),
