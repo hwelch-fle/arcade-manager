@@ -27,7 +27,7 @@ class Sync:
         }
 
         self.repos["origin"] = Path(
-            r"S:\Projects\Ezee Fiber\_ArcGIS Setup\Template\\{Market} {FDA} - v1.17\arcade_rules\ezee-arcade"
+            r"S:\Automation\arcade-manager"
         )
 
         self.databases = {
