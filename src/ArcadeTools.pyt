@@ -27,7 +27,7 @@ class Sync:
         }
 
         self.repos["origin"] = Path(
-            r"S:\Automation\arcade-manager"
+            r"S:\Automation\ezee-arcade"
         )
 
         self.databases = {
