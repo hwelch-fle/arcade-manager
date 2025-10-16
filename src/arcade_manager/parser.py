@@ -349,8 +349,8 @@ class Extractor:
                 out_location=schema_out,
                 formats=["JSON"],
             )
-            self.schema: Dataset = self._read(json.loads(out_path.open().read()))
-
+            _fl = out_path.open(encoding='utf-8').read()
+            self.schema: Dataset = self._read(json.loads(_fl))
             # Because GenerateSchemaReport will strip $datastore names and replace
             # them with GUIDs, we need to do a second pass to re-extract the script
             # text using da.Describe
